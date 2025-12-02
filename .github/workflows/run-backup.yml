@@ -1,0 +1,71 @@
+name: Run backup.sh (demo for submission)
+
+# Runs manually and on a schedule (daily)
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs daily at 02:00 UTC — change if you want a different time.
+    - cron: '0 2 * * *'
+
+jobs:
+  run-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show backup.sh contents (for screenshots)
+        run: |
+          echo "===== backup.sh preview ====="
+          sed -n '1,200p' backup.sh || true
+
+      - name: Show current perms (Task 15)
+        run: |
+          echo "=== Before chmod ==="
+          ls -l backup.sh || true
+
+      - name: Make backup.sh executable
+        run: |
+          chmod +x backup.sh
+          echo "=== After chmod ==="
+          ls -l backup.sh
+
+      - name: Prepare test directories
+        run: |
+          # Ensure target/destination exist so the script runs safely
+          mkdir -p "$HOME/mydata"
+          mkdir -p "$HOME/backups"
+          # Put a test file modified just now (so it is included)
+          echo "test" > "$HOME/mydata/test_from_action.txt"
+          # Show their paths
+          echo "Target: $HOME/mydata"
+          echo "Destination: $HOME/backups"
+
+      - name: Run the backup script
+        env:
+          HOME: ${{ runner.home }}
+        run: |
+          # Make sure backup.sh references use the correct paths or override env vars if your script allows
+          # If your script uses $HOME/mydata and $HOME/backups as in the example, it will work.
+          ./backup.sh
+          echo "Script exit code: $?"
+
+      - name: Show backups directory contents (Task 16)
+        run: |
+          echo "=== Backups dir listing ==="
+          ls -la "$HOME/backups" || true
+          echo "=== Runner workspace listing ==="
+          ls -la .
+
+      - name: Upload backup artifact (so you can download/inspect)
+        uses: actions/upload-artifact@v4
+        with:
+          name: produced-backups
+          path: ${{ runner.home }}/backups/*
+
+      - name: Print crontab-like line (for Task 17)
+        run: |
+          echo "To run daily, use a crontab entry like:"
+          echo "0 2 * * * /path/to/backup.sh"
+          # Also print workflow YAML schedule for screenshot convenience:
+          echo "Workflow schedule (in .github/workflows/run-backup.yml): 0 2 * * *"
