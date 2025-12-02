@@ -24,6 +24,19 @@ jobs:
           echo "=== Before chmod ==="
           ls -l backup.sh || true
 
+      - name: Normalize line endings (fix CRLF -> LF)
+        run: |
+          # ensure backup.sh has Unix line endings
+          if [ -f backup.sh ]; then
+            sed -i 's/\r$//' backup.sh
+            echo "Normalized line endings for backup.sh"
+            head -n 1 backup.sh | od -c | sed -n '1,3p'
+          else
+            echo "backup.sh not found at repo root!"
+            exit 1
+          fi
+
+      
       - name: Make backup.sh executable
         run: |
           chmod +x backup.sh
